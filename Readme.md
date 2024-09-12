@@ -138,22 +138,22 @@ clean:
 
 相较于前面两个版本，Version3增加了几个新特性
 
-* `CXXFLAGS`​ 是编译参数设置，替换了前面的 `-c`​ ，同时增加了 `-Wall`​ 。这个参数的含义是渲染所有的warning。如果你实验的话，在执行make命令后，会产生warining，在printhello.cpp文件中的变量 `i`​ 只被声明而未被调用。
+* ​`CXXFLAGS`​ 是编译参数设置，替换了前面的 `-c`​ ，同时增加了 `-Wall`​ 。这个参数的含义是渲染所有的warning。如果你实验的话，在执行make命令后，会产生warining，在printhello.cpp文件中的变量 `i`​ 只被声明而未被调用。
 * 一些小的缩写tips
 
   * 在 `<TAB>`​ 后
 
-    * `$@`​ 等价于上面一行中的目标项（即冒号之前的文件名）
-    * `$^`​ 等价于上面一行中的依赖项（即冒号以后的所有文件名）
-    * `$<`​ 等价于上面一行中的依赖项的第一个文件名（即冒号以后的第一个文件名）
-  * `%...`​ 会逐个遍历匹配的内容
+    * ​`$@`​ 等价于上面一行中的目标项（即冒号之前的文件名）
+    * ​`$^`​ 等价于上面一行中的依赖项（即冒号以后的所有文件名）
+    * ​`$<`​ 等价于上面一行中的依赖项的第一个文件名（即冒号以后的第一个文件名）
+  * ​`%...`​ 会逐个遍历匹配的内容
 
-    * `%.o`​ 逐个匹配所有具有后缀.o的文件
-    * `%.cpp`​ 逐个匹配所有具有后缀.cpp的文件
-* `clean`​
+    * ​`%.o`​ 逐个匹配所有具有后缀.o的文件
+    * ​`%.cpp`​ 逐个匹配所有具有后缀.cpp的文件
+* ​`clean`​
 
   * 暂时先不管上面的 `.PHONY: clean`​。第18、19行的内容表示目标是clean文件，没有依赖项。要生成 clean 文件，就会执行下面的命令，效果是强制清除所有的 object 文件以及最后的 target 。但是由于 clean 没有任何依赖项，所以执行 make 命令的时候，不会为其检查更新。只有当指明执行 make clean 的时候，才会执行下面的命令。
-  * `.PHONY: clean`​ 是产生一个伪目标，防止项目中真的存在一个名叫clean 的文件使得 `make clean`​ 被阻止执行（系统检测到 clean 存在而没有依赖项，会报告 clean 已经最新）。而 `.PHONY`​ 是一个不可能存在的文件，但是他依赖 clean，它使得即使 clean 文件已经存在，`make clean`​ 也会生效。
+  * ​`.PHONY: clean`​ 是产生一个伪目标，防止项目中真的存在一个名叫clean 的文件使得 `make clean`​ 被阻止执行（系统检测到 clean 存在而没有依赖项，会报告 clean 已经最新）。而 `.PHONY`​ 是一个不可能存在的文件，但是他依赖 clean，它使得即使 clean 文件已经存在，`make clean`​ 也会生效。
 
 # Version 4
 
@@ -172,7 +172,7 @@ $(TARGET): $(OBJ)
 # $@ stand for target
 # $^ stand for objects
 
-$.o: %.cpp
+%.o: %.cpp
 	$(CXX) $(CXXFLAGS) $< -o $@
 # $< stand for the frist objects
 
@@ -183,11 +183,53 @@ clean:
 
 该版本使用了两个函数（functions），更方便直接的获取了所有的 .cpp 文件名以及编译产生的 .o 文件名
 
-* [`\$(wildcard pattern…)`](https://www.gnu.org/software/make/manual/html_node/Wildcard-Function.html): 当前目录下搜索所有的满足匹配条件的文件名
+* ​[`\$(wildcard pattern…)`](https://www.gnu.org/software/make/manual/html_node/Wildcard-Function.html)​: 当前目录下搜索所有的满足匹配条件的文件名
 
-  * `SRC = $(wildcard *.cpp)`​ 会将所有以 .cpp 结尾的文件名全部返回给 SRC
-* [`\$(patsubst pattern,replacement,text)`](https://www.gnu.org/software/make/manual/html_node/Text-Functions.html): 将 text 中的所有匹配 pattern 的内容全部替换为 replacement 
+  * ​`SRC = $(wildcard *.cpp)`​ 会将所有以 .cpp 结尾的文件名全部返回给 SRC
+* ​[`\$(patsubst pattern,replacement,text)`](https://www.gnu.org/software/make/manual/html_node/Text-Functions.html)​: 将 text 中的所有匹配 pattern 的内容全部替换为 replacement 
 
-  * `$(patsubst %.cpp, %.o, $(SRC))`​则会将所有的 .cpp 文件名（`$(SRC)`​ 存储了所有 .cpp 文件名）替换为 .o 文件名
+  * ​`$(patsubst %.cpp, %.o, $(SRC))`​则会将所有的 .cpp 文件名（`$(SRC)`​ 存储了所有 .cpp 文件名）替换为 .o 文件名
 
-‍
+# Version 5
+
+这个版本是我自己加的，我发现 Version 4 虽然好用，但是无法处理头文件依赖项。可以看到其中没有管头文件。如果头文件发生了修改，但是在 makefile 检查依赖项时发现没有文件更新，于是不会重新编译。
+
+头文件依赖项是较难处理的，因为头文件不是简单的看名称就可以判断依赖性，而是要看内容，代码中到底引用了哪些头文件。例如这个例子中，不仅仅只有 `printhello.cpp`​ 和 `factorial.cpp`​ 依赖 `functions.h`​ ，包括 `main.cpp`​ 也依赖 `functions.h`​ 。难道要一个个手写吗，可想而知一旦项目大起来、头文件多起来，这是一种极为不健康的行为。
+
+好在可以使用 `-MMD`​ 或 `-MD`​ 选项来生成 `.d`​ （依赖文件），这些文件包含了源文件（如`.cpp`​文件）与其包含的头文件之间的依赖关系。
+
+* ​`-MMD`​：生成依赖文件，但忽略系统头文件。
+* ​`-MD`​：生成依赖文件，包括系统头文件。
+
+于是就有了新的模板
+
+```makefile
+## Version 5
+CXX = g++
+CXXFLAGS = -c -Wall
+TARGET = hello
+SRC = $(wildcard *.cpp) 
+# wildcard function will search all the matched files and stored their name
+OBJ = $(patsubst %.cpp, %.o, $(SRC))
+# patsubst will substitute ".cpp" to ".o" for all files in $(SRC)
+DEP = $(patsubst %.cpp, %.d, $(SRC))
+# patsubst will substitute ".cpp" to ".d" for all files in $(SRC)
+
+$(TARGET): $(OBJ)
+	$(CXX) -o $@ $^
+# $@ stand for target
+# $^ stand for objects
+
+%.o: %.cpp
+	$(CXX) -c $(CXXFLAGS) -MMD -MP $< -o $@
+# $< stand for the first object
+# -MMD: Generate dependency file
+# -MP: Create phony targets for each header file
+
+-include $(DEP)
+# Include dependency files
+
+.PHONY: clean
+clean:
+	rm -f *.o *.d $(TARGET)
+```
